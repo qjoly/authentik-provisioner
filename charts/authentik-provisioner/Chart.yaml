@@ -1,0 +1,19 @@
+apiVersion: v2
+name: authentik-provisioner
+description: Idempotent provisioner that injects OIDC/OAuth configuration into authentik, run as a Kubernetes Job.
+type: application
+# Chart version (bumped on chart changes) and the app/image version it deploys.
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - authentik
+  - oidc
+  - oauth2
+  - provisioner
+  - gitops
+home: https://github.com/qjoly/authentik-provisioner
+sources:
+  - https://github.com/qjoly/authentik-provisioner
+maintainers:
+  - name: qjoly
+    url: https://github.com/qjoly

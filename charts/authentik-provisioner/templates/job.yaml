@@ -1,0 +1,115 @@
+{{- $fullname := include "authentik-provisioner.fullname" . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  {{- if .Values.job.helmHook }}
+  # Hook name is stable; hook-delete-policy removes the previous run so the
+  # (immutable) Job can be recreated on each upgrade.
+  name: {{ $fullname }}
+  {{- else }}
+  name: {{ printf "%s-%s" $fullname (now | date "20060102150405") }}
+  {{- end }}
+  labels:
+    {{- include "authentik-provisioner.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.job.helmHook }}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+    helm.sh/hook-delete-policy: before-hook-creation
+    {{- end }}
+    {{- if .Values.job.argocdHook }}
+    argocd.argoproj.io/hook: {{ .Values.job.argocdHook }}
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    {{- end }}
+    {{- with .Values.job.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  {{- with .Values.job.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ . }}
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        # Re-run the Job when the rendered config changes (plain-Job mode).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.job.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "authentik-provisioner.selectorLabels" . | nindent 8 }}
+        {{- with .Values.job.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: {{ .Values.job.restartPolicy }}
+      serviceAccountName: {{ include "authentik-provisioner.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: provisioner
+          image: {{ include "authentik-provisioner.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -config
+            - /config/config.yaml
+            - {{ printf "-wait=%v" .Values.job.wait }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: AUTHENTIK_URL
+              value: {{ .Values.authentik.url | quote }}
+            - name: AUTHENTIK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.authentik.token.value }}
+                  name: {{ $fullname }}-token
+                  key: token
+                  {{- else }}
+                  name: {{ required "authentik.token.existingSecret is required (or set authentik.token.value)" .Values.authentik.token.existingSecret }}
+                  key: {{ .Values.authentik.token.key }}
+                  {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.job.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $fullname }}
+      {{- with .Values.job.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.job.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.job.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -53,3 +53,19 @@ jobs:
       # from main (handled by the release workflow) to keep PRs side-effect free.
       - name: Build image
         run: docker build -t authentik-provisioner:ci .
+
+  helm:
+    name: helm lint & template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Lint chart
+        run: helm lint charts/authentik-provisioner
+
+      - name: Render chart
+        run: helm template ci charts/authentik-provisioner --set authentik.token.value=dummy > /dev/null

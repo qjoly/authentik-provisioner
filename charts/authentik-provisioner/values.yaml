@@ -1,0 +1,85 @@
+# Default values for authentik-provisioner.
+
+image:
+  repository: ghcr.io/qjoly/authentik-provisioner
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# authentik connection.
+authentik:
+  # Public authentik URL, without /api/v3.
+  url: http://authentik-server
+  token:
+    # Reference an existing secret holding the API token.
+    existingSecret: authentik-bootstrap
+    key: token
+    # Alternatively, set the token inline (creates a Secret). Prefer existingSecret.
+    value: ""
+
+serviceAccount:
+  create: true
+  # Used when create is false, or to override the generated name.
+  name: ""
+  annotations: {}
+
+rbac:
+  # Create a Role/RoleBinding allowing the Job to write the OIDC client secrets
+  # it provisions. Required whenever a provider declares a secretName.
+  create: true
+
+job:
+  # Run the Job as a Helm hook so it re-runs on every install/upgrade. Set to
+  # false to manage it as a plain Job, or use argocdHook for Argo CD.
+  helmHook: true
+  # When set (e.g. "PostSync"), adds Argo CD hook annotations instead of Helm's.
+  argocdHook: ""
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  restartPolicy: Never
+  annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # Wait for the authentik API before provisioning.
+  wait: true
+
+# Pod- and container-level security contexts (distroless nonroot image).
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# Extra environment variables. Values referenced as ${NAME} in `config` are
+# expanded from the environment, so inject per-env secrets/URIs here.
+extraEnv: []
+#  - name: AKADMIN_PASSWORD
+#    valueFrom:
+#      secretKeyRef:
+#        name: authentik-bootstrap
+#        key: password
+extraEnvFrom: []
+#  - secretRef:
+#      name: authentik-oidc-env
+
+# The provisioner desired-state config, rendered verbatim into a ConfigMap as
+# config.yaml. See config.example.yaml in the repo for the full schema.
+config:
+  managedBy: gitops-provisioner
+  pruneGroups: true
+  oauth2Providers: []
+  oauthSources: []
+  users: []
+  groups: []

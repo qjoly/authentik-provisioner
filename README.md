@@ -48,24 +48,51 @@ example. `${ENV}` references inside the file are expanded from the process
 environment at load time, so redirect URIs, client secrets and passwords can be
 injected without hardcoding them.
 
-## Kubernetes
+## Kubernetes (Helm)
 
-Build and push the image, then apply the manifests in [`deploy/`](./deploy):
+The chart is published as an OCI artifact on GHCR. It renders the ConfigMap
+(your desired-state config), the Job, and the ServiceAccount/RBAC needed to
+write client secrets. By default the Job is a Helm hook, so it re-runs on every
+`helm upgrade`.
 
 ```bash
-docker build -t ghcr.io/qjoly/authentik-provisioner:latest .
-
-kubectl apply -f deploy/rbac.yaml
-kubectl create configmap authentik-provisioner-config \
-  --from-file=config.yaml=config.yaml -n authentik
-kubectl apply -f deploy/job.yaml
+helm install authentik-provisioner \
+  oci://ghcr.io/qjoly/charts/authentik-provisioner \
+  --namespace authentik \
+  --set authentik.url=http://authentik-server \
+  --set authentik.token.existingSecret=authentik-bootstrap \
+  --values my-values.yaml   # your `config:` desired state
 ```
 
-The Job runs the provisioner once; wire it as an ArgoCD `PostSync` hook or a
-Helm hook to re-run it on every sync. Writing client secrets requires the
-`get/create/update` permission on `secrets` granted by `deploy/rbac.yaml`; if no
-provider declares a `secretName` (or you pass `-no-secrets`), the provisioner
-never touches the cluster and needs no RBAC.
+The container image itself is `ghcr.io/qjoly/authentik-provisioner`. Both the
+image and the chart are versioned by the same git tag.
+
+Follow the run with:
+
+```bash
+kubectl -n authentik logs job/authentik-provisioner -f
+```
+
+Key values (see [`charts/authentik-provisioner/values.yaml`](./charts/authentik-provisioner/values.yaml)):
+
+| Value                            | Description                                                        |
+| -------------------------------- | ------------------------------------------------------------------ |
+| `authentik.url`                  | Public authentik URL (without `/api/v3`).                          |
+| `authentik.token.existingSecret` | Secret holding the API token (or set `authentik.token.value`).     |
+| `config`                         | The desired-state config, rendered into a ConfigMap as config.yaml.|
+| `job.helmHook` / `job.argocdHook`| Re-run the Job via a Helm hook (default) or an Argo CD hook.        |
+| `rbac.create`                    | Grant the secret write permission (needed for `secretName`).       |
+| `extraEnv` / `extraEnvFrom`      | Inject values referenced as `${NAME}` in the config.               |
+
+### Plain manifests
+
+For a `kubectl`-only workflow, reference manifests live in [`deploy/`](./deploy)
+(ServiceAccount/RBAC + a one-shot Job reading a ConfigMap named
+`authentik-provisioner-config`).
+
+Writing client secrets requires the `get/create/update` permission on `secrets`;
+if no provider declares a `secretName` (or you pass `-no-secrets`), the
+provisioner never touches the cluster and needs no RBAC.
 
 ## Layout
 
@@ -75,4 +102,6 @@ internal/authentik   thin /api/v3 client (generic verbs + lookup helpers)
 internal/config      YAML desired-state schema + loader
 internal/provision   idempotent provisioning logic (providers, sources, users, groups)
 internal/kube        Kubernetes secret writer (in-cluster or kubeconfig)
+charts/              Helm chart (published to GHCR as an OCI artifact)
+deploy/              plain kubectl manifests (alternative to the chart)
 ```
