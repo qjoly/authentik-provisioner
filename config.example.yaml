@@ -1,0 +1,91 @@
+# Desired-state configuration for the authentik provisioner.
+#
+# ${ENV} references are expanded from the process environment at load time, so
+# secrets and per-environment values (redirect URIs, client secrets, passwords)
+# can be injected without hardcoding them here.
+#
+# Run with:
+#   AUTHENTIK_URL=https://auth.example.com AUTHENTIK_TOKEN=... \
+#     provisioner -config config.yaml
+
+# Marker stamped on users/groups this tool manages. The prune step only ever
+# deletes objects carrying this marker, never built-ins (akadmin, ...).
+managedBy: gitops-provisioner
+
+# Delete managed groups that are no longer listed below. Users are never pruned.
+pruneGroups: true
+
+# Shared defaults applied to every OAuth2 provider unless overridden.
+defaults:
+  authorizationFlow: default-provider-authorization-implicit-consent
+  invalidationFlow: default-provider-invalidation-flow
+  scopes: [openid, email, profile]
+  subMode: user_email
+
+# Optionally (re)set the first user's password. Sourced from the environment.
+bootstrap:
+  username: akadmin
+  password: ${AKADMIN_PASSWORD}
+  email: ${AKADMIN_EMAIL}
+
+oauth2Providers:
+  # Confidential client: client_id/client_secret are written to a k8s secret.
+  - slug: grafana
+    name: Grafana
+    clientType: confidential
+    redirectURIs:
+      - https://grafana.example.com/login/generic_oauth
+    icon: https://www.example.com/logos/grafana.png
+    secretName: oidc-grafana
+    # Optional per-provider authentication flow (by slug).
+    # authenticationFlow: cloudflare-authentication
+
+  - slug: argocd
+    name: ArgoCD
+    clientType: confidential
+    redirectURIs:
+      - https://argocd.example.com/auth/callback
+    secretName: oidc-argocd
+
+  # Public client (PKCE, no secret): client_id is fixed and non-sensitive.
+  - slug: kargo
+    name: Kargo
+    clientType: public
+    clientID: kargo
+    redirectURIs:
+      - https://kargo.example.com/login
+
+# Social-login source (e.g. an upstream OIDC IdP such as Cloudflare Access).
+oauthSources:
+  - slug: cloudflare
+    name: Cloudflare
+    providerType: openidconnect
+    consumerKey: ${CF_OIDC_CLIENT_ID}
+    consumerSecret: ${CF_OIDC_CLIENT_SECRET}
+    userMatchingMode: email_link
+    authenticationFlow: default-source-authentication
+    enrollmentFlow: default-source-enrollment
+    authorizationURL: https://${CF_TEAM_DOMAIN}/cdn-cgi/access/sso/oidc/${CF_OIDC_CLIENT_ID}/authorization
+    accessTokenURL: https://${CF_TEAM_DOMAIN}/cdn-cgi/access/sso/oidc/${CF_OIDC_CLIENT_ID}/token
+    profileURL: https://${CF_TEAM_DOMAIN}/cdn-cgi/access/sso/oidc/${CF_OIDC_CLIENT_ID}/userinfo
+    oidcJwksURL: https://${CF_TEAM_DOMAIN}/cdn-cgi/access/sso/oidc/${CF_OIDC_CLIENT_ID}/jwks
+    oidcWellKnownURL: https://${CF_TEAM_DOMAIN}/cdn-cgi/access/sso/oidc/${CF_OIDC_CLIENT_ID}/.well-known/openid-configuration
+    # Expose the source as a button on the default login screen.
+    addToLoginStage: default-authentication-identification
+
+# Pre-created internal users so group membership works before first login.
+users:
+  - email: alice@example.com
+    name: Alice Example
+  - email: bob@example.com
+    # name is optional; derived from the email local-part when omitted.
+
+# Managed groups with an authoritative member list (by email).
+groups:
+  - name: Platform Admins
+    members:
+      - alice@example.com
+  - name: Developers
+    members:
+      - alice@example.com
+      - bob@example.com

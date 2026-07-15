@@ -1,0 +1,49 @@
+# Kubernetes Job that runs the provisioner once. Re-run it (e.g. as an ArgoCD
+# PostSync hook or a Helm hook) whenever the config changes — it is idempotent.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: authentik-provisioner
+  namespace: authentik
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: authentik-provisioner
+    spec:
+      serviceAccountName: authentik-provisioner
+      restartPolicy: Never
+      containers:
+        - name: provisioner
+          image: ghcr.io/qjoly/authentik-provisioner:latest
+          args: ["-config", "/config/config.yaml"]
+          env:
+            # Namespace to write the provisioned client secrets into.
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: AUTHENTIK_URL
+              value: http://authentik-server
+            - name: AUTHENTIK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-bootstrap
+                  key: token
+            # Values referenced as ${...} in the config are read from the env.
+            - name: AKADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-bootstrap
+                  key: password
+            - name: AKADMIN_EMAIL
+              value: admin@example.com
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: authentik-provisioner-config
