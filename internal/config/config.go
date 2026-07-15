@@ -65,6 +65,11 @@ type OAuth2Provider struct {
 	// SecretName, when set on a confidential client, writes client_id and
 	// client_secret into a Kubernetes secret of that name.
 	SecretName string `yaml:"secretName"`
+	// AccessGroups restricts the application to members of these groups (by
+	// name) via policy bindings. When set, the list is authoritative: group
+	// bindings absent from it are removed. When empty/omitted the application's
+	// access bindings are left untouched (never locks everyone out).
+	AccessGroups []string `yaml:"accessGroups"`
 }
 
 // OAuthSource is a social-login source (e.g. an OIDC IdP).

@@ -37,6 +37,11 @@ oauth2Providers:
       - https://grafana.example.com/login/generic_oauth
     icon: https://www.example.com/logos/grafana.png
     secretName: oidc-grafana
+    # Restrict who can access the application. Authoritative when set: group
+    # bindings absent from this list are removed. Omit to leave access untouched.
+    accessGroups:
+      - Platform Admins
+      - Developers
     # Optional per-provider authentication flow (by slug).
     # authenticationFlow: cloudflare-authentication
 

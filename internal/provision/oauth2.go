@@ -84,8 +84,16 @@ func (p *Provisioner) provisionOAuth2(ctx context.Context, prov *config.OAuth2Pr
 	if prov.Icon != "" {
 		appBody["meta_icon"] = prov.Icon
 	}
-	if err := p.upsertApplication(ctx, prov.Slug, appBody); err != nil {
+	appPK, err := p.upsertApplication(ctx, prov.Slug, appBody)
+	if err != nil {
 		return err
+	}
+
+	// Reconcile which groups may access the application (policy bindings).
+	if len(prov.AccessGroups) > 0 {
+		if err := p.reconcileAppAccess(ctx, appPK, prov.AccessGroups); err != nil {
+			return err
+		}
 	}
 
 	// Write the client credentials to Kubernetes for confidential clients.
@@ -113,16 +121,26 @@ func (p *Provisioner) provisionOAuth2(ctx context.Context, prov *config.OAuth2Pr
 }
 
 // upsertApplication PATCHes an existing application (found by slug) or POSTs a
-// new one. authentik exposes applications at a slug-addressed detail endpoint.
-func (p *Provisioner) upsertApplication(ctx context.Context, slug string, body map[string]any) error {
+// new one, returning the application's pk (uuid). authentik exposes
+// applications at a slug-addressed detail endpoint.
+func (p *Provisioner) upsertApplication(ctx context.Context, slug string, body map[string]any) (string, error) {
+	var resp struct {
+		PK string `json:"pk"`
+	}
 	err := p.api.Get(ctx, "/core/applications/"+slug+"/", nil)
 	if err == nil {
-		return p.api.Patch(ctx, "/core/applications/"+slug+"/", body, nil)
+		if err := p.api.Patch(ctx, "/core/applications/"+slug+"/", body, &resp); err != nil {
+			return "", err
+		}
+		return resp.PK, nil
 	}
 	if !isNotFound(err) {
-		return err
+		return "", err
 	}
-	return p.api.Post(ctx, "/core/applications/", body, nil)
+	if err := p.api.Post(ctx, "/core/applications/", body, &resp); err != nil {
+		return "", err
+	}
+	return resp.PK, nil
 }
 
 func redirectURIs(uris []string) []map[string]string {

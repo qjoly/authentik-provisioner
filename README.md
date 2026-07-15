@@ -10,7 +10,9 @@ It provisions:
 
 - **OAuth2 / OIDC providers + applications** — confidential (client_secret) or
   public (PKCE). For confidential clients it writes the resulting
-  `client_id` / `client_secret` into a Kubernetes secret.
+  `client_id` / `client_secret` into a Kubernetes secret. Application access can
+  be restricted to a set of groups (`accessGroups`) via policy bindings, kept
+  authoritative on each run.
 - **OAuth social-login sources** (e.g. an upstream OIDC IdP), optionally exposed
   as a button on the login screen.
 - **Users** — pre-created internal users so group membership works before their
