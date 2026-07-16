@@ -80,6 +80,7 @@ Key values (see [`charts/authentik-provisioner/values.yaml`](./charts/authentik-
 | `authentik.url`                  | Public authentik URL (without `/api/v3`).                          |
 | `authentik.token.existingSecret` | Secret holding the API token (or set `authentik.token.value`).     |
 | `config`                         | The desired-state config, rendered into a ConfigMap as config.yaml.|
+| `existingConfigSecret.name`      | Mount the config from an existing Secret instead of a ConfigMap.   |
 | `job.helmHook` / `job.argocdHook`| Re-run the Job via a Helm hook (default) or an Argo CD hook.        |
 | `rbac.create`                    | Grant the secret write permission (needed for `secretName`).       |
 | `extraEnv` / `extraEnvFrom`      | Inject values referenced as `${NAME}` in the config.               |

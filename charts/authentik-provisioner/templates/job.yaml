@@ -32,8 +32,10 @@ spec:
   template:
     metadata:
       annotations:
+        {{- if not .Values.existingConfigSecret.name }}
         # Re-run the Job when the rendered config changes (plain-Job mode).
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
         {{- with .Values.job.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -99,8 +101,16 @@ spec:
               readOnly: true
       volumes:
         - name: config
+          {{- if .Values.existingConfigSecret.name }}
+          secret:
+            secretName: {{ .Values.existingConfigSecret.name }}
+            items:
+              - key: {{ .Values.existingConfigSecret.key }}
+                path: config.yaml
+          {{- else }}
           configMap:
             name: {{ $fullname }}
+          {{- end }}
       {{- with .Values.job.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

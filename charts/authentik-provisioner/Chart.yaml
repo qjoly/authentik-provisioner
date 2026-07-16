@@ -3,8 +3,9 @@ name: authentik-provisioner
 description: Idempotent provisioner that injects OIDC/OAuth configuration into authentik, run as a Kubernetes Job.
 type: application
 # Chart version (bumped on chart changes) and the app/image version it deploys.
-version: 0.1.0
-appVersion: "0.1.0"
+# At release time both are overridden with the pushed git tag.
+version: 0.3.0
+appVersion: "0.2.0"
 keywords:
   - authentik
   - oidc

@@ -74,8 +74,16 @@ extraEnvFrom: []
 #  - secretRef:
 #      name: authentik-oidc-env
 
+# Source the desired-state config from an existing Secret instead of rendering
+# `config` into a ConfigMap. Use this when the config embeds sensitive values.
+# The referenced key is mounted as /config/config.yaml regardless of its name.
+existingConfigSecret:
+  name: ""
+  key: config.yaml
+
 # The provisioner desired-state config, rendered verbatim into a ConfigMap as
-# config.yaml. See config.example.yaml in the repo for the full schema.
+# config.yaml. Ignored when existingConfigSecret.name is set. See
+# config.example.yaml in the repo for the full schema.
 config:
   managedBy: gitops-provisioner
   pruneGroups: true
