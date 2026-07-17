@@ -12,7 +12,11 @@ It provisions:
   public (PKCE). For confidential clients it writes the resulting
   `client_id` / `client_secret` into a Kubernetes secret. Application access can
   be restricted to a set of groups (`accessGroups`) via policy bindings, kept
-  authoritative on each run.
+  authoritative on each run. The application display name can differ from the
+  provider name via `appName`.
+- **Proxy providers + applications** — for apps behind authentik's proxy /
+  forward-auth (`proxy`, `forward_single`, `forward_domain`), automatically
+  added to the embedded outpost.
 - **OAuth social-login sources** (e.g. an upstream OIDC IdP), optionally exposed
   as a button on the login screen.
 - **Brands (appearance / theme)** — per-domain branding: title, logo, favicon,

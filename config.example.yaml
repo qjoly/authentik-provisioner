@@ -32,6 +32,9 @@ oauth2Providers:
   # Confidential client: client_id/client_secret are written to a k8s secret.
   - slug: grafana
     name: Grafana
+    # appName sets the application's display name when it differs from the
+    # provider name (both default to `name`).
+    # appName: Grafana
     clientType: confidential
     redirectURIs:
       - https://grafana.example.com/login/generic_oauth
@@ -59,6 +62,23 @@ oauth2Providers:
     clientID: kargo
     redirectURIs:
       - https://kargo.example.com/login
+
+# Proxy providers (for apps behind authentik's proxy / forward-auth, served by
+# the embedded outpost). Modes: proxy | forward_single | forward_domain.
+proxyProviders:
+  - slug: sonarr
+    name: Sonarr
+    mode: forward_single
+    externalHost: https://sonarr.example.com
+    accessGroups:
+      - Media
+    # For mode: proxy, set the upstream:
+    # mode: proxy
+    # internalHost: http://sonarr.media.svc:8989
+    # internalHostSSLValidation: false
+    # skipPathRegex: "^/api/.*"
+    # accessTokenValidity: "hours=24"
+    # embeddedOutpost: true   # default true; a provider not in an outpost does nothing
 
 # Social-login source (e.g. an upstream OIDC IdP such as Cloudflare Access).
 oauthSources:

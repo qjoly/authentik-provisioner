@@ -23,6 +23,7 @@ type Config struct {
 	Bootstrap *Bootstrap `yaml:"bootstrap"`
 
 	OAuth2Providers []OAuth2Provider `yaml:"oauth2Providers"`
+	ProxyProviders  []ProxyProvider  `yaml:"proxyProviders"`
 	OAuthSources    []OAuthSource    `yaml:"oauthSources"`
 	Brands          []Brand          `yaml:"brands"`
 	Users           []User           `yaml:"users"`
@@ -51,8 +52,11 @@ type Bootstrap struct {
 
 // OAuth2Provider describes an OAuth2/OIDC provider and its application.
 type OAuth2Provider struct {
-	Slug         string   `yaml:"slug"`
-	Name         string   `yaml:"name"`
+	Slug string `yaml:"slug"`
+	Name string `yaml:"name"`
+	// AppName is the application's display name. Defaults to Name when empty
+	// (the provider and application can have different names in authentik).
+	AppName      string   `yaml:"appName"`
 	RedirectURIs []string `yaml:"redirectURIs"`
 	// ClientType is "confidential" (default) or "public" (PKCE, no secret).
 	ClientType string `yaml:"clientType"`
@@ -71,6 +75,35 @@ type OAuth2Provider struct {
 	// bindings absent from it are removed. When empty/omitted the application's
 	// access bindings are left untouched (never locks everyone out).
 	AccessGroups []string `yaml:"accessGroups"`
+}
+
+// ProxyProvider describes a Proxy provider (for the embedded outpost) and its
+// application. Used for apps fronted by authentik's proxy/forward-auth.
+type ProxyProvider struct {
+	Slug string `yaml:"slug"`
+	Name string `yaml:"name"`
+	// AppName is the application's display name. Defaults to Name when empty.
+	AppName string `yaml:"appName"`
+	// Mode: "proxy" (default), "forward_single" or "forward_domain".
+	Mode string `yaml:"mode"`
+	// ExternalHost is the public URL of the application (required).
+	ExternalHost string `yaml:"externalHost"`
+	// InternalHost is the upstream, required for mode "proxy".
+	InternalHost string `yaml:"internalHost"`
+	// InternalHostSSLValidation validates the upstream TLS cert (default true).
+	InternalHostSSLValidation *bool  `yaml:"internalHostSSLValidation"`
+	SkipPathRegex             string `yaml:"skipPathRegex"`
+	CookieDomain              string `yaml:"cookieDomain"`
+	// AccessTokenValidity e.g. "hours=24" (authentik duration syntax).
+	AccessTokenValidity string `yaml:"accessTokenValidity"`
+	// InterceptHeaderAuth forwards Authorization headers (default true).
+	InterceptHeaderAuth *bool  `yaml:"interceptHeaderAuth"`
+	Icon                string `yaml:"icon"`
+	// AccessGroups restricts the application to these groups (see OAuth2Provider).
+	AccessGroups []string `yaml:"accessGroups"`
+	// EmbeddedOutpost adds the provider to the embedded outpost so it is served
+	// (default true — a proxy provider not in an outpost does nothing).
+	EmbeddedOutpost *bool `yaml:"embeddedOutpost"`
 }
 
 // OAuthSource is a social-login source (e.g. an OIDC IdP).
@@ -188,6 +221,13 @@ func (c *Config) applyDefaults() {
 			p.SubMode = c.Defaults.SubMode
 		}
 	}
+
+	for i := range c.ProxyProviders {
+		p := &c.ProxyProviders[i]
+		if p.Mode == "" {
+			p.Mode = "proxy"
+		}
+	}
 }
 
 // Validate performs light structural checks.
@@ -206,6 +246,26 @@ func (c *Config) Validate() error {
 		}
 		if p.ClientType != "public" && p.ClientType != "confidential" {
 			return fmt.Errorf("provider %q has invalid clientType %q", p.Slug, p.ClientType)
+		}
+	}
+	for _, p := range c.ProxyProviders {
+		if p.Slug == "" || p.Name == "" {
+			return fmt.Errorf("proxy provider requires slug and name (got slug=%q name=%q)", p.Slug, p.Name)
+		}
+		if seenSlug[p.Slug] {
+			return fmt.Errorf("duplicate provider slug %q", p.Slug)
+		}
+		seenSlug[p.Slug] = true
+		if p.ExternalHost == "" {
+			return fmt.Errorf("proxy provider %q requires externalHost", p.Slug)
+		}
+		switch p.Mode {
+		case "proxy", "forward_single", "forward_domain":
+		default:
+			return fmt.Errorf("proxy provider %q has invalid mode %q", p.Slug, p.Mode)
+		}
+		if p.Mode == "proxy" && p.InternalHost == "" {
+			return fmt.Errorf("proxy provider %q in mode 'proxy' requires internalHost", p.Slug)
 		}
 	}
 	for _, g := range c.Groups {

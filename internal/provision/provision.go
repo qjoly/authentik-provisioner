@@ -28,10 +28,11 @@ type Provisioner struct {
 	dryRun  bool
 
 	// Resolved once per run and reused by every provider.
-	authFlowPK  string
-	invalFlowPK string
-	signingKey  string
-	scopePK     map[string]string
+	authFlowPK      string
+	invalFlowPK     string
+	signingKey      string
+	scopePK         map[string]string
+	proxyMappingPKs []string
 }
 
 // New builds a Provisioner. secrets may be nil when no provider needs a
@@ -56,7 +57,7 @@ func (p *Provisioner) Run(ctx context.Context) error {
 		}
 	}
 
-	if len(p.cfg.OAuth2Providers) > 0 {
+	if len(p.cfg.OAuth2Providers) > 0 || len(p.cfg.ProxyProviders) > 0 {
 		if err := p.resolveShared(ctx); err != nil {
 			return fmt.Errorf("resolve shared objects: %w", err)
 		}
@@ -65,6 +66,12 @@ func (p *Provisioner) Run(ctx context.Context) error {
 	for i := range p.cfg.OAuth2Providers {
 		if err := p.provisionOAuth2(ctx, &p.cfg.OAuth2Providers[i]); err != nil {
 			return fmt.Errorf("provision provider %q: %w", p.cfg.OAuth2Providers[i].Slug, err)
+		}
+	}
+
+	for i := range p.cfg.ProxyProviders {
+		if err := p.provisionProxy(ctx, &p.cfg.ProxyProviders[i]); err != nil {
+			return fmt.Errorf("provision proxy provider %q: %w", p.cfg.ProxyProviders[i].Slug, err)
 		}
 	}
 

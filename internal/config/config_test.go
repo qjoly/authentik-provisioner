@@ -70,3 +70,38 @@ func TestValidateRejectsDuplicateSlug(t *testing.T) {
 		t.Fatal("expected error for duplicate slug")
 	}
 }
+
+func TestProxyProviderDefaultsAndValidation(t *testing.T) {
+	// applyDefaults sets the mode to "proxy" when unset.
+	cfg := &Config{ProxyProviders: []ProxyProvider{
+		{Slug: "sonarr", Name: "Sonarr", ExternalHost: "https://sonarr.example.com"},
+	}}
+	cfg.applyDefaults()
+	if got := cfg.ProxyProviders[0].Mode; got != "proxy" {
+		t.Errorf("default proxy mode = %q, want proxy", got)
+	}
+
+	// A forward_single provider needs only slug/name/externalHost.
+	valid := &Config{ProxyProviders: []ProxyProvider{
+		{Slug: "sonarr", Name: "Sonarr", Mode: "forward_single", ExternalHost: "https://sonarr.example.com"},
+	}}
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("valid proxy provider rejected: %v", err)
+	}
+
+	// mode "proxy" requires an internalHost.
+	bad := &Config{ProxyProviders: []ProxyProvider{
+		{Slug: "x", Name: "X", Mode: "proxy", ExternalHost: "https://x"},
+	}}
+	if err := bad.Validate(); err == nil {
+		t.Fatal("expected error for proxy mode without internalHost")
+	}
+
+	// externalHost is required.
+	noHost := &Config{ProxyProviders: []ProxyProvider{
+		{Slug: "y", Name: "Y", Mode: "forward_single"},
+	}}
+	if err := noHost.Validate(); err == nil {
+		t.Fatal("expected error for proxy provider without externalHost")
+	}
+}

@@ -76,8 +76,12 @@ func (p *Provisioner) provisionOAuth2(ctx context.Context, prov *config.OAuth2Pr
 	}
 
 	// Upsert the application bound to the provider (lookup by slug).
+	appName := prov.AppName
+	if appName == "" {
+		appName = prov.Name
+	}
 	appBody := map[string]any{
-		"name":     prov.Name,
+		"name":     appName,
 		"slug":     prov.Slug,
 		"provider": provResp.PK,
 	}
