@@ -2,11 +2,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  {{- if .Values.job.helmHook }}
-  # Hook name is stable; hook-delete-policy removes the previous run so the
-  # (immutable) Job can be recreated on each upgrade.
+  {{- if or .Values.job.helmHook .Values.job.argocdHook }}
+  # Hook mode: stable name; the hook-delete-policy removes the previous run so
+  # the (immutable) Job is recreated on each sync (no accumulation).
   name: {{ $fullname }}
   {{- else }}
+  # Plain Job: unique name so a re-apply creates a fresh (immutable) Job.
   name: {{ printf "%s-%s" $fullname (now | date "20060102150405") }}
   {{- end }}
   labels:
