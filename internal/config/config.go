@@ -113,9 +113,13 @@ type Brand struct {
 	Domain  string `yaml:"domain"`
 	Default bool   `yaml:"default"` // fallback brand when no domain matches
 
-	// Branding / theme.
+	// Branding / theme. Note: logo, favicon and flowBackground are file paths
+	// served by authentik (uploaded media or /static/... assets), not arbitrary
+	// URLs — recent authentik versions reject values containing ":" on these
+	// fields. For a self-contained custom background, set it from CustomCSS via
+	// a data-URI (the --ak-flow-background variable) instead.
 	Title          string `yaml:"title"`          // branding_title
-	Logo           string `yaml:"logo"`           // branding_logo (path or URL)
+	Logo           string `yaml:"logo"`           // branding_logo
 	Favicon        string `yaml:"favicon"`        // branding_favicon
 	FlowBackground string `yaml:"flowBackground"` // branding_default_flow_background
 	CustomCSS      string `yaml:"customCSS"`      // branding_custom_css

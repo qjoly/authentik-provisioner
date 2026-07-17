@@ -84,12 +84,22 @@ brands:
   - domain: auth.example.com
     default: true
     title: Example SSO
-    logo: https://www.example.com/logos/brand.svg
-    favicon: https://www.example.com/logos/favicon.png
-    flowBackground: https://www.example.com/logos/flow-bg.jpg
-    # Custom CSS injected into every page (theme tweaks).
+    # logo / favicon / flowBackground are FILE PATHS served by authentik
+    # (e.g. an uploaded media path or a /static/... asset), NOT arbitrary URLs.
+    # Recent authentik versions reject values containing ":" (so https://...
+    # and data: URIs are rejected on these fields).
+    logo: /static/dist/assets/icons/icon_left_brand.svg
+    # flowBackground: /media/public/flow-bg.jpg
+    #
+    # For a fully self-contained custom background (no hosting, no upload),
+    # skip flowBackground and set it from customCSS via a data-URI instead —
+    # authentik reads the --ak-flow-background variable. See
+    # examples/themes/cafe/ for a complete, ready-to-use theme.
     customCSS: |
-      :root { --ak-accent: #6d28d9; }
+      :root {
+        --ak-accent: #C68A4E;
+        --ak-flow-background: url("data:image/svg+xml;base64,...");
+      }
     # Optional default flow slugs and landing application.
     # recoveryFlow: default-recovery-flow
     # defaultApplication: grafana

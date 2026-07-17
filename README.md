@@ -16,7 +16,11 @@ It provisions:
 - **OAuth social-login sources** (e.g. an upstream OIDC IdP), optionally exposed
   as a button on the login screen.
 - **Brands (appearance / theme)** — per-domain branding: title, logo, favicon,
-  flow background, custom CSS, default flows and landing application.
+  flow background, custom CSS, default flows and landing application. Note that
+  logo/favicon/flow-background are file paths served by authentik (not URLs); for
+  a self-contained custom background, embed it from `customCSS` via a data-URI
+  (`--ak-flow-background`). A complete example theme lives in
+  [`examples/themes/cafe/`](./examples/themes/cafe).
 - **Users** — pre-created internal users so group membership works before their
   first login.
 - **Groups** — with an authoritative member list, and optional pruning of

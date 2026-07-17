@@ -1,0 +1,42 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Fond abstrait couleur cafe latte</title>
+<desc>Composition abstraite de formes organiques dans des tons de cafe latte, du creme clair au brun torrefie, pour servir de fond a une page d'authentification.</desc>
+<defs>
+  <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#f4e8d8"/>
+    <stop offset="55%" stop-color="#e6cfae"/>
+    <stop offset="100%" stop-color="#c9a171"/>
+  </linearGradient>
+  <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#fff6e9" stop-opacity="0.9"/>
+    <stop offset="100%" stop-color="#fff6e9" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#8b5a2b" stop-opacity="0.55"/>
+    <stop offset="100%" stop-color="#8b5a2b" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="swirl1" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#e9c99a"/>
+    <stop offset="100%" stop-color="#a97c50"/>
+  </linearGradient>
+  <linearGradient id="swirl2" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#6f4423"/>
+    <stop offset="100%" stop-color="#9c6b3f"/>
+  </linearGradient>
+</defs>
+
+<rect x="0" y="0" width="1920" height="1080" fill="url(#bg)"/>
+
+<circle cx="1500" cy="180" r="520" fill="url(#glow1)"/>
+<circle cx="250" cy="900" r="600" fill="url(#glow2)"/>
+
+<path d="M -100 700 C 250 550, 550 850, 900 680 C 1250 510, 1500 720, 1900 560 L 1900 1180 L -100 1180 Z"
+      fill="url(#swirl1)" opacity="0.55"/>
+
+<path d="M -100 820 C 300 900, 620 680, 980 800 C 1350 930, 1600 760, 2020 860 L 2020 1180 L -100 1180 Z"
+      fill="url(#swirl2)" opacity="0.5"/>
+
+<path d="M -100 200 C 200 80, 480 260, 780 140 C 1080 20, 1350 200, 1700 90 C 1850 40, 1920 70, 1920 70 L 1920 -100 L -100 -100 Z"
+      fill="#f6ecd9" opacity="0.65"/>
+
+</svg>
