@@ -149,6 +149,28 @@ func (c *Client) FirstPK(ctx context.Context, path string) (string, error) {
 	return pkString(obj.PK), nil
 }
 
+// FirstValue returns the given field of the first result of a list endpoint, or
+// "" when the list is empty. Use it for objects whose identifier is not named
+// "pk" (e.g. brands, keyed by "brand_uuid").
+func (c *Client) FirstValue(ctx context.Context, path, field string) (string, error) {
+	var list listResponse
+	if err := c.Get(ctx, path, &list); err != nil {
+		return "", err
+	}
+	if len(list.Results) == 0 {
+		return "", nil
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(list.Results[0], &obj); err != nil {
+		return "", err
+	}
+	raw, ok := obj[field]
+	if !ok {
+		return "", nil
+	}
+	return pkString(raw), nil
+}
+
 // pkString normalises a pk that may be encoded as a JSON string or number.
 func pkString(raw json.RawMessage) string {
 	s := strings.Trim(string(raw), `"`)

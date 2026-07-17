@@ -78,6 +78,27 @@ oauthSources:
     # Expose the source as a button on the default login screen.
     addToLoginStage: default-authentication-identification
 
+# Branding / theme (authentik Brand objects, matched by domain). Empty fields
+# are left untouched on existing brands.
+brands:
+  - domain: auth.example.com
+    default: true
+    title: Example SSO
+    logo: https://www.example.com/logos/brand.svg
+    favicon: https://www.example.com/logos/favicon.png
+    flowBackground: https://www.example.com/logos/flow-bg.jpg
+    # Custom CSS injected into every page (theme tweaks).
+    customCSS: |
+      :root { --ak-accent: #6d28d9; }
+    # Optional default flow slugs and landing application.
+    # recoveryFlow: default-recovery-flow
+    # defaultApplication: grafana
+    # Advanced passthrough (e.g. force a base theme).
+    # attributes:
+    #   settings:
+    #     theme:
+    #       base: dark
+
 # Pre-created internal users so group membership works before first login.
 users:
   - email: alice@example.com

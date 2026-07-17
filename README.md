@@ -15,6 +15,8 @@ It provisions:
   authoritative on each run.
 - **OAuth social-login sources** (e.g. an upstream OIDC IdP), optionally exposed
   as a button on the login screen.
+- **Brands (appearance / theme)** — per-domain branding: title, logo, favicon,
+  flow background, custom CSS, default flows and landing application.
 - **Users** — pre-created internal users so group membership works before their
   first login.
 - **Groups** — with an authoritative member list, and optional pruning of

@@ -24,6 +24,7 @@ type Config struct {
 
 	OAuth2Providers []OAuth2Provider `yaml:"oauth2Providers"`
 	OAuthSources    []OAuthSource    `yaml:"oauthSources"`
+	Brands          []Brand          `yaml:"brands"`
 	Users           []User           `yaml:"users"`
 	Groups          []Group          `yaml:"groups"`
 
@@ -105,6 +106,37 @@ type Group struct {
 	Members []string `yaml:"members"`
 }
 
+// Brand configures authentik's appearance/theme for a domain (the Brand object,
+// formerly "tenant"). Empty fields are left untouched on existing brands.
+// Brands are matched (and upserted) by domain.
+type Brand struct {
+	Domain  string `yaml:"domain"`
+	Default bool   `yaml:"default"` // fallback brand when no domain matches
+
+	// Branding / theme.
+	Title          string `yaml:"title"`          // branding_title
+	Logo           string `yaml:"logo"`           // branding_logo (path or URL)
+	Favicon        string `yaml:"favicon"`        // branding_favicon
+	FlowBackground string `yaml:"flowBackground"` // branding_default_flow_background
+	CustomCSS      string `yaml:"customCSS"`      // branding_custom_css
+
+	// Default flow slugs (optional).
+	AuthenticationFlow string `yaml:"authenticationFlow"`
+	InvalidationFlow   string `yaml:"invalidationFlow"`
+	RecoveryFlow       string `yaml:"recoveryFlow"`
+	UnenrollmentFlow   string `yaml:"unenrollmentFlow"`
+	UserSettingsFlow   string `yaml:"userSettingsFlow"`
+	DeviceCodeFlow     string `yaml:"deviceCodeFlow"`
+
+	// DefaultApplication is the slug of the application shown on the brand's
+	// landing page (optional).
+	DefaultApplication string `yaml:"defaultApplication"`
+
+	// Attributes is a passthrough for advanced brand settings (e.g. theme
+	// overrides under `settings`). Merged as-is into the brand's attributes.
+	Attributes map[string]any `yaml:"attributes"`
+}
+
 // Load reads, expands ${ENV} references, and parses the config file.
 func Load(path string) (*Config, error) {
 	raw, err := os.ReadFile(path)
@@ -175,6 +207,11 @@ func (c *Config) Validate() error {
 	for _, g := range c.Groups {
 		if g.Name == "" {
 			return fmt.Errorf("group requires a name")
+		}
+	}
+	for _, b := range c.Brands {
+		if b.Domain == "" {
+			return fmt.Errorf("brand requires a domain")
 		}
 	}
 	return nil

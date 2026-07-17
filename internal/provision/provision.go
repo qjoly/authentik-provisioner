@@ -74,6 +74,12 @@ func (p *Provisioner) Run(ctx context.Context) error {
 		}
 	}
 
+	for i := range p.cfg.Brands {
+		if err := p.provisionBrand(ctx, &p.cfg.Brands[i]); err != nil {
+			return fmt.Errorf("provision brand %q: %w", p.cfg.Brands[i].Domain, err)
+		}
+	}
+
 	for i := range p.cfg.Users {
 		u := p.cfg.Users[i]
 		if err := p.provisionUser(ctx, u.Email, u.Name); err != nil {
