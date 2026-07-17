@@ -149,6 +149,30 @@ func (c *Client) FirstPK(ctx context.Context, path string) (string, error) {
 	return pkString(obj.PK), nil
 }
 
+// FindPK returns the pk of the first list result whose matchField equals
+// matchValue, or "" when none matches. Unlike FirstPK it never trusts a
+// server-side query filter — some authentik list endpoints (e.g.
+// /providers/proxy/) silently ignore ?name=, so the caller must pass a broad
+// list (with page_size) and this matches exactly, client-side.
+func (c *Client) FindPK(ctx context.Context, listPath, matchField, matchValue string) (string, error) {
+	var list listResponse
+	if err := c.Get(ctx, listPath, &list); err != nil {
+		return "", err
+	}
+	for _, raw := range list.Results {
+		var obj map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &obj); err != nil {
+			return "", err
+		}
+		if f, ok := obj[matchField]; ok && pkString(f) == matchValue {
+			if pk, ok := obj["pk"]; ok {
+				return pkString(pk), nil
+			}
+		}
+	}
+	return "", nil
+}
+
 // FirstValue returns the given field of the first result of a list endpoint, or
 // "" when the list is empty. Use it for objects whose identifier is not named
 // "pk" (e.g. brands, keyed by "brand_uuid").

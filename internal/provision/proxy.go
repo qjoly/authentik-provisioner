@@ -88,7 +88,8 @@ func (p *Provisioner) provisionProxy(ctx context.Context, prov *config.ProxyProv
 		return nil
 	}
 
-	existingPK, err := p.api.FirstPK(ctx, "/providers/proxy/?name="+urlq(prov.Name))
+	// /providers/proxy/ ignores ?name=, so match exactly client-side.
+	existingPK, err := p.api.FindPK(ctx, "/providers/proxy/?page_size=1000", "name", prov.Name)
 	if err != nil {
 		return err
 	}

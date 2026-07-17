@@ -59,8 +59,8 @@ func (p *Provisioner) provisionOAuth2(ctx context.Context, prov *config.OAuth2Pr
 		return nil
 	}
 
-	// Upsert the provider (lookup by name).
-	existingPK, err := p.api.FirstPK(ctx, "/providers/oauth2/?name="+urlq(prov.Name))
+	// Upsert the provider (match by name, client-side to avoid filter quirks).
+	existingPK, err := p.api.FindPK(ctx, "/providers/oauth2/?page_size=1000", "name", prov.Name)
 	if err != nil {
 		return err
 	}
