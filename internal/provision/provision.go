@@ -47,13 +47,33 @@ func New(api *authentik.Client, cfg *config.Config, secrets SecretUpserter, dryR
 	}
 }
 
-// Run executes the full provisioning in the same order as the reference shell
-// job: bootstrap, resolve shared objects, providers, sources, users, groups,
-// prune.
+// Run executes the full provisioning: bootstrap, users, groups, prune, then
+// providers, sources and brands. Groups come before providers because
+// accessGroups binds them by name.
 func (p *Provisioner) Run(ctx context.Context) error {
 	if p.cfg.Bootstrap != nil {
 		if err := p.bootstrapAdmin(ctx, p.cfg.Bootstrap); err != nil {
 			return fmt.Errorf("bootstrap admin: %w", err)
+		}
+	}
+
+	for i := range p.cfg.Users {
+		u := p.cfg.Users[i]
+		if err := p.provisionUser(ctx, u.Email, u.Name); err != nil {
+			return fmt.Errorf("provision user %q: %w", u.Email, err)
+		}
+	}
+
+	for i := range p.cfg.Groups {
+		g := p.cfg.Groups[i]
+		if err := p.provisionGroup(ctx, g.Name, g.Members); err != nil {
+			return fmt.Errorf("provision group %q: %w", g.Name, err)
+		}
+	}
+
+	if p.cfg.PruneGroups {
+		if err := p.pruneGroups(ctx); err != nil {
+			return fmt.Errorf("prune groups: %w", err)
 		}
 	}
 
@@ -84,26 +104,6 @@ func (p *Provisioner) Run(ctx context.Context) error {
 	for i := range p.cfg.Brands {
 		if err := p.provisionBrand(ctx, &p.cfg.Brands[i]); err != nil {
 			return fmt.Errorf("provision brand %q: %w", p.cfg.Brands[i].Domain, err)
-		}
-	}
-
-	for i := range p.cfg.Users {
-		u := p.cfg.Users[i]
-		if err := p.provisionUser(ctx, u.Email, u.Name); err != nil {
-			return fmt.Errorf("provision user %q: %w", u.Email, err)
-		}
-	}
-
-	for i := range p.cfg.Groups {
-		g := p.cfg.Groups[i]
-		if err := p.provisionGroup(ctx, g.Name, g.Members); err != nil {
-			return fmt.Errorf("provision group %q: %w", g.Name, err)
-		}
-	}
-
-	if p.cfg.PruneGroups {
-		if err := p.pruneGroups(ctx); err != nil {
-			return fmt.Errorf("prune groups: %w", err)
 		}
 	}
 
